@@ -1,0 +1,11 @@
+apiVersion: filteredapiexport.kcp.io/v1alpha1
+kind: FilteredAPIExportEndpointSlice
+metadata:
+  name: example
+spec:
+  export:
+    path: root
+    name: example
+  objectSelector:
+    matchLabels:
+      environment: "prod"
