@@ -25,15 +25,11 @@ source hack/lib.sh
 # RECONCILER_GEN="$(UGET_PRINT_PATH=relative make --no-print-directory install-reconciler-gen)"
 # "$RECONCILER_GEN" --config hack/reconciling.yaml > $reconcileHelpers
 
-CRD_DIR=deploy/crd
-KCP_CRD_DIR="$CRD_DIR/kcp.io"
-rm -rf -- "$KCP_CRD_DIR"
-mkdir -p "$KCP_CRD_DIR"
-
-APIRESOURCES_DIR="$CRD_DIR/apiresources"
-KCP_APIRESOURCES_DIR="$APIRESOURCES_DIR/kcp.io"
-rm -rf -- "$KCP_APIRESOURCES_DIR"
-mkdir -p "$KCP_APIRESOURCES_DIR"
+DEPLOY_DIR=deploy
+KCP_CRD_DIR="$DEPLOY_DIR/crd/filteredvw.kcp.io"
+KCP_APIRESOURCES_DIR="$DEPLOY_DIR/apiresources/filteredvw.kcp.io"
+rm -rf -- "$KCP_CRD_DIR" "$KCP_APIRESOURCES_DIR"
+mkdir -p "$KCP_CRD_DIR" "$KCP_APIRESOURCES_DIR"
 
 echodate "Generating openAPI v3 CRDs…"
 
@@ -49,12 +45,6 @@ YQ="$(UGET_PRINT_PATH=relative make --no-print-directory install-yq)"
 "$API_GEN" \
   --input-dir "${KCP_CRD_DIR}" \
   --output-dir "${KCP_APIRESOURCES_DIR}"
-
-# these are types only used for testing the syncer
-# "$CONTROLLER_GEN" \
-#   crd \
-#   paths=./internal/sync/apis/... \
-#   output:crd:dir=./internal/sync/crd/
 
 beautify() {
   "$YQ" --inplace --no-doc 'del(.metadata.creationTimestamp)' "$1"
@@ -74,7 +64,3 @@ done
 for f in $KCP_APIRESOURCES_DIR/*.yaml; do
   beautify "$f"
 done
-
-# for f in internal/sync/crd/*.yaml; do
-#   beautify "$f"
-# done

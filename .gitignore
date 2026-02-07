@@ -5,6 +5,7 @@ coverage.*
 /hack/tools
 _tools
 build
+_build
 vendor
 goio.yaml
 *.kubeconfig

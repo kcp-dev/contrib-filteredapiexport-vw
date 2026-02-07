@@ -69,7 +69,6 @@ clean-tools:
 	rm -rf $(UGET_DIRECTORY)
 	@echo "Cleaned $(UGET_DIRECTORY)."
 
-
 .PHONY: lint
 lint: install-golangci-lint
 	$(GOLANGCI_LINT) run \
@@ -77,6 +76,10 @@ lint: install-golangci-lint
 		--timeout 20m \
 		--print-resources-usage \
 		./...
+
+.PHONY: test
+test:
+	./hack/run-tests.sh
 
 .PHONY: imports
 imports: install-gimps
