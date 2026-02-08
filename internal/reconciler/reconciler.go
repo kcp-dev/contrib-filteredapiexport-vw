@@ -24,7 +24,6 @@ import (
 	kcpinformers "github.com/kcp-dev/sdk/client/informers/externalversions"
 
 	"github.com/kcp-dev/contrib-filteredapiexport-vw/internal/reconciler/endpointslice"
-	"github.com/kcp-dev/contrib-filteredapiexport-vw/internal/reconciler/endpointsliceurls"
 	filteredapiexportclientset "github.com/kcp-dev/contrib-filteredapiexport-vw/sdk/client/clientset/versioned/cluster"
 	filteredapiexportinformers "github.com/kcp-dev/contrib-filteredapiexport-vw/sdk/client/informers/externalversions"
 
@@ -80,21 +79,11 @@ func (r *Reconciler) InstallIndexers() {
 		r.CacheKcpSharedInformerFactory.Apis().V1alpha2().APIExports(),
 		r.LocalFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices(),
 	)
-
-	// Install indexers for endpointsliceurls controller
-	endpointsliceurls.InstallIndexers(
-		r.LocalFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices(),
-		r.LocalKcpSharedInformerFactory.Apis().V1alpha2().APIBindings(),
-	)
 }
 
 func (r *Reconciler) InstallControllers(ctx context.Context, localShardConfig, frontProxyConfig *rest.Config) error {
 	if err := r.installFilteredAPIExportEndpointSliceController(ctx, localShardConfig); err != nil {
 		return fmt.Errorf("failed to install FilteredAPIExportEndpointSlice controller: %w", err)
-	}
-
-	if err := r.installFilteredAPIExportEndpointSliceURLsController(ctx, frontProxyConfig); err != nil {
-		return fmt.Errorf("failed to install FilteredAPIExportEndpointSliceURLs controller: %w", err)
 	}
 
 	return nil
@@ -160,43 +149,6 @@ func (r *Reconciler) installFilteredAPIExportEndpointSliceController(_ context.C
 		Wait: func(ctx context.Context, r *Reconciler) error {
 			return wait.PollUntilContextCancel(ctx, waitPollInterval, true, func(ctx context.Context) (bool, error) {
 				return r.LocalFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices().Informer().HasSynced() &&
-					r.CacheKcpSharedInformerFactory.Apis().V1alpha2().APIExports().Informer().HasSynced(), nil
-			})
-		},
-		Runner: func(ctx context.Context) {
-			c.Start(ctx, 2)
-		},
-	})
-}
-
-func (r *Reconciler) installFilteredAPIExportEndpointSliceURLsController(_ context.Context, config *rest.Config) error {
-	config = rest.CopyConfig(config)
-	config = rest.AddUserAgent(config, endpointsliceurls.ControllerName)
-
-	filteredAPIExportClusterClient, err := filteredapiexportclientset.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-
-	c, err := endpointsliceurls.NewController(
-		r.ShardName,
-		r.CacheKcpSharedInformerFactory.Apis().V1alpha2().APIExports(),
-		r.CacheKcpSharedInformerFactory.Core().V1alpha1().Shards(),
-		r.LocalFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices(),
-		r.LocalKcpSharedInformerFactory.Apis().V1alpha2().APIBindings(),
-		filteredAPIExportClusterClient,
-	)
-	if err != nil {
-		return err
-	}
-
-	return r.registerController(&controllerWrapper{
-		Name: endpointsliceurls.ControllerName,
-		Wait: func(ctx context.Context, r *Reconciler) error {
-			return wait.PollUntilContextCancel(ctx, waitPollInterval, true, func(ctx context.Context) (bool, error) {
-				return r.LocalFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices().Informer().HasSynced() &&
-					r.LocalKcpSharedInformerFactory.Apis().V1alpha2().APIBindings().Informer().HasSynced() &&
-					r.CacheKcpSharedInformerFactory.Core().V1alpha1().Shards().Informer().HasSynced() &&
 					r.CacheKcpSharedInformerFactory.Apis().V1alpha2().APIExports().Informer().HasSynced(), nil
 			})
 		},

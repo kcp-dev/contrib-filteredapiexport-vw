@@ -96,12 +96,12 @@ type FilteredAPIExportEndpointSliceStatus struct {
 	// conditions is a list of conditions that apply to the FilteredAPIExportEndpointSlice.
 	Conditions conditionsv1alpha1.Conditions `json:"conditions,omitempty"`
 
-	// endpoints contains all the URLs of the APIExport service.
-	//
-	// +optional
-	// +listType=map
-	// +listMapKey=url
-	FilteredAPIExportEndpoints []FilteredAPIExportEndpoint `json:"endpoints"`
+	// // endpoints contains all the URLs of the APIExport service.
+	// //
+	// // +optional
+	// // +listType=map
+	// // +listMapKey=url
+	// FilteredAPIExportEndpoints []FilteredAPIExportEndpoint `json:"endpoints"`
 }
 
 const (
@@ -116,15 +116,15 @@ const (
 // Using a struct provides an extension point
 
 // APIExportEndpoint contains the endpoint information of an APIExport service for a specific shard.
-type FilteredAPIExportEndpoint struct {
-
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:format:URL
-	// +required
-
-	// url is a FilteredAPIExport virtual workspace URL for this instance of FilteredAPIExportEndpoint.
-	URL string `json:"url"`
-}
+// type FilteredAPIExportEndpoint struct {
+//
+// 	// +kubebuilder:validation:MinLength=1
+// 	// +kubebuilder:format:URL
+// 	// +required
+//
+// 	// url is a FilteredAPIExport virtual workspace URL for this instance of FilteredAPIExportEndpoint.
+// 	URL string `json:"url"`
+// }
 
 func (in *FilteredAPIExportEndpointSlice) GetConditions() conditionsv1alpha1.Conditions {
 	return in.Status.Conditions

@@ -8,7 +8,7 @@ spec:
   resources:
     - group: filteredvw.kcp.io
       name: filteredapiexportendpointslices
-      schema: v260206-42f5595.filteredapiexportendpointslices.filteredvw.kcp.io
+      schema: v260208-7741365.filteredapiexportendpointslices.filteredvw.kcp.io
       storage:
         crd: {}
 status: {}

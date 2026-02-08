@@ -52,7 +52,6 @@ func (r *endpointsReconciler) reconcile(_ context.Context, filteredAPIExportES *
 		reason := filteredvwv1alpha1.InternalErrorReason
 		if apierrors.IsNotFound(err) {
 			// Don't keep the endpoints if the APIExport has been deleted
-			filteredAPIExportES.Status.FilteredAPIExportEndpoints = nil
 			conditions.MarkFalse(
 				filteredAPIExportES,
 				filteredvwv1alpha1.APIExportValid,

@@ -35,8 +35,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 	// Group=filteredvw.kcp.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithKind("ExportBindingReference"):
 		return &filteredvwv1alpha1.ExportBindingReferenceApplyConfiguration{}
-	case v1alpha1.SchemeGroupVersion.WithKind("FilteredAPIExportEndpoint"):
-		return &filteredvwv1alpha1.FilteredAPIExportEndpointApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FilteredAPIExportEndpointSlice"):
 		return &filteredvwv1alpha1.FilteredAPIExportEndpointSliceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FilteredAPIExportEndpointSliceSpec"):

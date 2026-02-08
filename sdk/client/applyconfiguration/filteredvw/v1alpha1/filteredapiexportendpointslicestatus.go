@@ -25,8 +25,7 @@ import (
 // FilteredAPIExportEndpointSliceStatusApplyConfiguration represents a declarative configuration of the FilteredAPIExportEndpointSliceStatus type for use
 // with apply.
 type FilteredAPIExportEndpointSliceStatusApplyConfiguration struct {
-	Conditions                 *conditionsv1alpha1.Conditions                `json:"conditions,omitempty"`
-	FilteredAPIExportEndpoints []FilteredAPIExportEndpointApplyConfiguration `json:"endpoints,omitempty"`
+	Conditions *conditionsv1alpha1.Conditions `json:"conditions,omitempty"`
 }
 
 // FilteredAPIExportEndpointSliceStatusApplyConfiguration constructs a declarative configuration of the FilteredAPIExportEndpointSliceStatus type for use with
@@ -40,18 +39,5 @@ func FilteredAPIExportEndpointSliceStatus() *FilteredAPIExportEndpointSliceStatu
 // If called multiple times, the Conditions field is set to the value of the last call.
 func (b *FilteredAPIExportEndpointSliceStatusApplyConfiguration) WithConditions(value conditionsv1alpha1.Conditions) *FilteredAPIExportEndpointSliceStatusApplyConfiguration {
 	b.Conditions = &value
-	return b
-}
-
-// WithFilteredAPIExportEndpoints adds the given value to the FilteredAPIExportEndpoints field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the FilteredAPIExportEndpoints field.
-func (b *FilteredAPIExportEndpointSliceStatusApplyConfiguration) WithFilteredAPIExportEndpoints(values ...*FilteredAPIExportEndpointApplyConfiguration) *FilteredAPIExportEndpointSliceStatusApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithFilteredAPIExportEndpoints")
-		}
-		b.FilteredAPIExportEndpoints = append(b.FilteredAPIExportEndpoints, *values[i])
-	}
 	return b
 }

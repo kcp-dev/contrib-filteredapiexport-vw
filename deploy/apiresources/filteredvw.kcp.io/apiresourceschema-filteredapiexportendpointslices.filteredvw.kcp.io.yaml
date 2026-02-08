@@ -3,7 +3,7 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  name: v260206-42f5595.filteredapiexportendpointslices.filteredvw.kcp.io
+  name: v260208-7741365.filteredapiexportendpointslices.filteredvw.kcp.io
 spec:
   group: filteredvw.kcp.io
   names:
@@ -170,22 +170,6 @@ spec:
                     - type
                   type: object
                 type: array
-              endpoints:
-                description: endpoints contains all the URLs of the APIExport service.
-                items:
-                  description: APIExportEndpoint contains the endpoint information of an APIExport service for a specific shard.
-                  properties:
-                    url:
-                      description: url is a FilteredAPIExport virtual workspace URL for this instance of FilteredAPIExportEndpoint.
-                      minLength: 1
-                      type: string
-                  required:
-                    - url
-                  type: object
-                type: array
-                x-kubernetes-list-map-keys:
-                  - url
-                x-kubernetes-list-type: map
             type: object
         type: object
       served: true
