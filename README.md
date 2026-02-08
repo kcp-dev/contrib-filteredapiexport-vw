@@ -2,6 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/kcp-dev/contrib-filteredapiexport-vw)](https://goreportcard.com/report/github.com/kcp-dev/contrib-filteredapiexport-vw)
 [![GitHub](https://img.shields.io/github/license/kcp-dev/contrib-filteredapiexport-vw)](https://github.com/kcp-dev/contrib-filteredapiexport-vw/blob/main/LICENSE)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kcp-dev/contrib-filteredapiexport-vw?sort=semver)](https://github.com/kcp-dev/contrib-filteredapiexport-vw/releases/latest)
 
 The Filtered APIExport Virtual Workspace is an external virtual workspace for [kcp](https://github.com/kcp-dev/kcp) that gives Service Providers (APIExport owners) filtered access to their resources in consumer workspaces (bound via APIBindings). This workspace is an extension of the built-in APIExport Virtual Workspace, scoped only to objects that match the provided label selector.
 
@@ -44,78 +45,13 @@ spec:
       team: "platform"
 ```
 
-## Getting Started
+## Deployment
 
-### Prerequisites
+See [the Deployment document](./docs/deployment.md) for more details.
 
-- A running [kcp](https://github.com/kcp-dev/kcp) instance
-- `kubectl` configured to access your kcp instance
-- An existing APIExport that you want to provide filtered access to
+## Quick Start
 
-### Installation
-
-<!-- TODO: Add installation instructions -->
-
-#### Option 1: Deploy to kcp
-
-```bash
-# TODO: Add deployment instructions
-```
-
-#### Option 2: Run Locally
-
-```bash
-# Build the virtual workspace server
-make build
-
-# Run the virtual workspace server
-./_build/filtered-apiexport-vw \
-  --kubeconfig=/path/to/kcp.kubeconfig \
-  --secure-serving.bind-address=:6444 \
-  --secure-serving.server-cert.cert-file=/path/to/cert.crt \
-  --secure-serving.server-cert.key-file=/path/to/cert.key
-```
-
-### Quick Start
-
-1. **Create an APIExport** (if you don't have one already):
-
-```yaml
-apiVersion: apis.kcp.io/v1alpha2
-kind: APIExport
-metadata:
-  name: my-api
-spec:
-  # ... your APIExport configuration
-```
-
-2. **Create a FilteredAPIExportEndpointSlice**:
-
-```yaml
-apiVersion: filteredvw.kcp.io/v1alpha1
-kind: FilteredAPIExportEndpointSlice
-metadata:
-  name: prod-only
-spec:
-  export:
-    path: root:my-org
-    name: my-api
-  objectSelector:
-    matchLabels:
-      environment: "prod"
-```
-
-3. **Check the status** for generated endpoint URLs:
-
-```bash
-kubectl get filteredapiexportendpointslices prod-only -o yaml
-```
-
-4. **Access the filtered API** using the endpoint URL from the status:
-
-```bash
-kubectl --server=<endpoint-url> get <your-resource>
-```
+See [the Quick Start document](./docs/quick-start.md) for more details.
 
 ## Development
 

@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: filtered-apiexport-vw
+  namespace: kcp
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: filtered-apiexport-vw-binding
+  namespace: kcp
+subjects:
+  - kind: ServiceAccount
+    name: filtered-apiexport-vw
+    namespace: kcp
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filtered-apiexport-vw
+  namespace: kcp
+  labels:
+    app: filtered-apiexport-vw
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filtered-apiexport-vw
+  template:
+    metadata:
+      labels:
+        app: filtered-apiexport-vw
+    spec:
+      hostAliases:
+        - hostnames:
+            - kcp.dev.test
+          ip: 10.96.0.100
+      serviceAccountName: filtered-apiexport-vw
+      containers:
+        - name: filtered-apiexport-vw
+          image: filtered-apiexport-vw:latest
+          imagePullPolicy: Never
+          args:
+            - "start"
+            - "--secure-port=8111"
+            - "--shard-name=root"
+            - "--shard-external-url=https://kcp.dev.test:8443"
+            - "--tls-cert-file=/etc/kcp/tls/server/tls.crt"
+            - "--tls-private-key-file=/etc/kcp/tls/server/tls.key"
+            - "--client-ca-file=/etc/kcp/tls/client-ca/tls.crt"
+            - "--local-shard-kubeconfig=/etc/kcp/kubeconfigs/kcp.kubeconfig"
+            - "--front-proxy-kubeconfig=/etc/kcp/kubeconfigs/kcp.kubeconfig"
+            - "--authentication-kubeconfig=/etc/kcp/kubeconfigs/kcp.kubeconfig"
+            - "--filtered-apiexport-vw-kubeconfig=/etc/kcp/kubeconfigs/filteredvw.kubeconfig"
+          volumeMounts:
+            - name: kcp-kubeconfig
+              mountPath: /etc/kcp/kubeconfigs
+              readOnly: true
+            - name: kcp-cert
+              mountPath: /etc/kcp/tls/server
+              readOnly: true
+            - name: kcp-client-ca
+              mountPath: /etc/kcp/tls/client-ca
+              readOnly: true
+          resources:
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+      volumes:
+        - name: kcp-kubeconfig
+          secret:
+            secretName: kcp-kubeconfig
+        - name: kcp-cert
+          secret:
+            secretName: kcp-cert
+        - name: kcp-client-ca
+          secret:
+            secretName: kcp-client-ca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kcp-filtered-apiexport-vw
+  namespace: kcp
+spec:
+  selector:
+    app: filtered-apiexport-vw
+  ports:
+    - protocol: TCP
+      port: 8111
+      targetPort: 8111
