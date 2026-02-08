@@ -46,28 +46,6 @@ presubmits:
               memory: 4Gi
               cpu: 2
 
-  - name: pull-contrib-filteredapiexport-vw-build-image
-    always_run: true
-    decorate: true
-    clone_uri: "https://github.com/kcp-dev/contrib-filteredapiexport-vw"
-    labels:
-      preset-goproxy: "true"
-    spec:
-      containers:
-        - image: quay.io/containers/buildah:v1.38.0
-          command:
-            - hack/ci/build-image.sh
-          env:
-            - name: DRY_RUN
-              value: "1"
-          # docker-in-docker needs privileged mode
-          securityContext:
-            privileged: true
-          resources:
-            requests:
-              memory: 1Gi
-              cpu: 1
-
   - name: pull-contrib-filteredapiexport-vw-test
     always_run: true
     decorate: true

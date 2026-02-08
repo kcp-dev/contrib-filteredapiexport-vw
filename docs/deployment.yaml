@@ -42,8 +42,8 @@ spec:
       serviceAccountName: filtered-apiexport-vw
       containers:
         - name: filtered-apiexport-vw
-          image: filtered-apiexport-vw:latest
-          imagePullPolicy: Never
+          image: ghcr.io/kcp-dev/contrib-filteredapiexport-vw:latest
+          imagePullPolicy: IfNotPresent
           args:
             - "start"
             - "--secure-port=8111"
