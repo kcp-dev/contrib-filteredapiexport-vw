@@ -237,7 +237,6 @@ func (c *APIReconciler) reconcile(ctx context.Context, filteredSlice *filteredvw
 				}
 			}
 
-			// TODO(xmudrii): make the label selector immutable.
 			var (
 				labelReqs  labels.Requirements
 				selectable bool

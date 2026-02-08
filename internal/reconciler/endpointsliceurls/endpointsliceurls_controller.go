@@ -60,7 +60,6 @@ const (
 // Shards and APIExports are read from the cache server.
 func NewController(
 	shardName string,
-	globalFilteredAPIExportEndpointSliceClusterInformer filteredvwinformers.FilteredAPIExportEndpointSliceClusterInformer,
 	globalAPIExportClusterInformer apisv1alpha2informers.APIExportClusterInformer,
 	globalShardClusterInformer corev1alpha1informers.ShardClusterInformer,
 	filteredAPIExportEndpointSliceClusterInformer filteredvwinformers.FilteredAPIExportEndpointSliceClusterInformer,
@@ -82,11 +81,7 @@ func NewController(
 			return globalShardClusterInformer.Cluster(core.RootCluster).Lister().List(labels.Everything())
 		},
 		getFilteredAPIExportEndpointSlice: func(path logicalcluster.Path, name string) (*filteredvwv1alpha1.FilteredAPIExportEndpointSlice, error) {
-			obj, err := indexers.ByPathAndNameWithFallback[*filteredvwv1alpha1.FilteredAPIExportEndpointSlice](filteredvwv1alpha1.Resource("filteredapiexportendpointslices"), filteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer(), globalFilteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer(), path, name)
-			if err != nil {
-				return nil, err
-			}
-			return obj, err
+			return indexers.ByPathAndName[*filteredvwv1alpha1.FilteredAPIExportEndpointSlice](filteredvwv1alpha1.Resource("filteredapiexportendpointslices"), filteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer(), path, name)
 		},
 		getAPIExport: func(path logicalcluster.Path, name string) (*apisv1alpha2.APIExport, error) {
 			return indexers.ByPathAndName[*apisv1alpha2.APIExport](apisv1alpha2.Resource("apiexports"), globalAPIExportClusterInformer.Informer().GetIndexer(), path, name)
@@ -128,8 +123,7 @@ func NewController(
 			})
 			return err
 		},
-		filteredAPIExportEndpointSliceClusterInformer:       filteredAPIExportEndpointSliceClusterInformer,
-		globalFilteredAPIExportEndpointSliceClusterInformer: globalFilteredAPIExportEndpointSliceClusterInformer,
+		filteredAPIExportEndpointSliceClusterInformer: filteredAPIExportEndpointSliceClusterInformer,
 	}
 
 	logger := logging.WithReconciler(klog.Background(), ControllerName)
@@ -157,6 +151,11 @@ func NewController(
 			c.enqueueFilteredAPIExportEndpointSliceByAPIBinding(tombstone.Obj[*apisv1alpha2.APIBinding](obj), logger)
 		},
 	})
+
+	// Touch the Shards informer so it gets registered with the factory and started.
+	// We don't need to react to Shard changes, but we need the lister to be populated
+	// for reconciliation.
+	_ = globalShardClusterInformer.Informer()
 
 	// TODO: revisit this in the future once we are able to cache non-default resources
 	// _, _ = globalFilteredAPIExportEndpointSliceClusterInformer.Informer().AddEventHandler(events.WithoutSyncs(cache.ResourceEventHandlerFuncs{
@@ -187,8 +186,7 @@ type controller struct {
 	listAPIBindingsByAPIExport          func(apiexport *apisv1alpha2.APIExport) ([]*apisv1alpha2.APIBinding, error)
 	patchFilteredAPIExportEndpointSlice func(ctx context.Context, cluster logicalcluster.Path, patch *filteredvwv1alpha1apply.FilteredAPIExportEndpointSliceApplyConfiguration) error
 
-	filteredAPIExportEndpointSliceClusterInformer       filteredvwinformers.FilteredAPIExportEndpointSliceClusterInformer
-	globalFilteredAPIExportEndpointSliceClusterInformer filteredvwinformers.FilteredAPIExportEndpointSliceClusterInformer
+	filteredAPIExportEndpointSliceClusterInformer filteredvwinformers.FilteredAPIExportEndpointSliceClusterInformer
 }
 
 func (c *controller) enqueueFilteredAPIExportEndpointSliceByAPIBinding(binding *apisv1alpha2.APIBinding, logger logr.Logger) {
@@ -221,35 +219,6 @@ func (c *controller) enqueueFilteredAPIExportEndpointSliceByAPIBinding(binding *
 				continue
 			}
 			c.enqueueFilteredAPIExportEndpointSlice(tombstone.Obj[*filteredvwv1alpha1.FilteredAPIExportEndpointSlice](slice), logger, " because of APIBinding")
-		}
-	}
-	{
-		keys := sets.New[string]()
-		if path := logicalcluster.NewPath(binding.Spec.Reference.Export.Path); !path.Empty() {
-			pathKeys, err := c.globalFilteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer().IndexKeys(filteredapiexportindexers.FilteredAPIExportEndpointSliceByAPIExport, path.Join(binding.Spec.Reference.Export.Name).String())
-			if err != nil {
-				utilruntime.HandleError(err)
-				return
-			}
-			keys.Insert(pathKeys...)
-		} else {
-			clusterKeys, err := c.globalFilteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer().IndexKeys(filteredapiexportindexers.FilteredAPIExportEndpointSliceByAPIExport, logicalcluster.From(binding).Path().Join(binding.Spec.Reference.Export.Name).String())
-			if err != nil {
-				utilruntime.HandleError(err)
-				return
-			}
-			keys.Insert(clusterKeys...)
-		}
-
-		for _, key := range sets.List[string](keys) {
-			slice, exists, err := c.globalFilteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer().GetByKey(key)
-			if err != nil {
-				utilruntime.HandleError(err)
-				continue
-			} else if !exists {
-				continue
-			}
-			c.enqueueFilteredAPIExportEndpointSlice(tombstone.Obj[*filteredvwv1alpha1.FilteredAPIExportEndpointSlice](slice), logger, "because of APIBinding from cache")
 		}
 	}
 }
@@ -347,20 +316,13 @@ func (c *controller) process(ctx context.Context, key string) (bool, error) {
 
 // InstallIndexers adds the additional indexers that this controller requires to the informers.
 func InstallIndexers(
-	globalFilteredAPIExportEndpointSliceClusterInformer filteredvwinformers.FilteredAPIExportEndpointSliceClusterInformer,
 	filteredAPIExportEndpointSliceClusterInformer filteredvwinformers.FilteredAPIExportEndpointSliceClusterInformer,
 	apiBindingInformer apisv1alpha2informers.APIBindingClusterInformer,
 ) {
 	indexers.AddIfNotPresentOrDie(filteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer(), cache.Indexers{
 		indexers.ByLogicalClusterPathAndName: indexers.IndexByLogicalClusterPathAndName,
 	})
-	indexers.AddIfNotPresentOrDie(globalFilteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ByLogicalClusterPathAndName: indexers.IndexByLogicalClusterPathAndName,
-	})
 	indexers.AddIfNotPresentOrDie(filteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer(), cache.Indexers{
-		filteredapiexportindexers.FilteredAPIExportEndpointSliceByAPIExport: filteredapiexportindexers.IndexFilteredAPIExportEndpointSliceByAPIExport,
-	})
-	indexers.AddIfNotPresentOrDie(globalFilteredAPIExportEndpointSliceClusterInformer.Informer().GetIndexer(), cache.Indexers{
 		filteredapiexportindexers.FilteredAPIExportEndpointSliceByAPIExport: filteredapiexportindexers.IndexFilteredAPIExportEndpointSliceByAPIExport,
 	})
 	indexers.AddIfNotPresentOrDie(apiBindingInformer.Informer().GetIndexer(), cache.Indexers{

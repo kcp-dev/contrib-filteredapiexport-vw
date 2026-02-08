@@ -45,7 +45,6 @@ const (
 type Reconciler struct {
 	ShardName                             string
 	CacheKcpSharedInformerFactory         kcpinformers.SharedInformerFactory
-	CacheFilteredAPIExportInformerFactory filteredapiexportinformers.SharedInformerFactory
 	LocalKcpSharedInformerFactory         kcpinformers.SharedInformerFactory
 	LocalFilteredAPIExportInformerFactory filteredapiexportinformers.SharedInformerFactory
 
@@ -56,14 +55,12 @@ type Reconciler struct {
 func NewReconciler(
 	shardName string,
 	cacheKcpSharedInformerFactory kcpinformers.SharedInformerFactory,
-	cacheFilteredAPIExportInformerFactory filteredapiexportinformers.SharedInformerFactory,
 	localKcpSharedInformerFactory kcpinformers.SharedInformerFactory,
 	localFilteredAPIExportInformerFactory filteredapiexportinformers.SharedInformerFactory,
 ) *Reconciler {
 	return &Reconciler{
 		ShardName:                             shardName,
 		CacheKcpSharedInformerFactory:         cacheKcpSharedInformerFactory,
-		CacheFilteredAPIExportInformerFactory: cacheFilteredAPIExportInformerFactory,
 		LocalKcpSharedInformerFactory:         localKcpSharedInformerFactory,
 		LocalFilteredAPIExportInformerFactory: localFilteredAPIExportInformerFactory,
 		syncedCh:                              make(chan struct{}),
@@ -81,12 +78,11 @@ func (r *Reconciler) InstallIndexers() {
 	// Install indexers for endpointslice controller
 	endpointslice.InstallIndexers(
 		r.CacheKcpSharedInformerFactory.Apis().V1alpha2().APIExports(),
-		r.CacheFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices(),
+		r.LocalFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices(),
 	)
 
 	// Install indexers for endpointsliceurls controller
 	endpointsliceurls.InstallIndexers(
-		r.CacheFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices(),
 		r.LocalFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices(),
 		r.LocalKcpSharedInformerFactory.Apis().V1alpha2().APIBindings(),
 	)
@@ -184,7 +180,6 @@ func (r *Reconciler) installFilteredAPIExportEndpointSliceURLsController(_ conte
 
 	c, err := endpointsliceurls.NewController(
 		r.ShardName,
-		r.CacheFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices(),
 		r.CacheKcpSharedInformerFactory.Apis().V1alpha2().APIExports(),
 		r.CacheKcpSharedInformerFactory.Core().V1alpha1().Shards(),
 		r.LocalFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices(),
@@ -201,7 +196,6 @@ func (r *Reconciler) installFilteredAPIExportEndpointSliceURLsController(_ conte
 			return wait.PollUntilContextCancel(ctx, waitPollInterval, true, func(ctx context.Context) (bool, error) {
 				return r.LocalFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices().Informer().HasSynced() &&
 					r.LocalKcpSharedInformerFactory.Apis().V1alpha2().APIBindings().Informer().HasSynced() &&
-					r.CacheFilteredAPIExportInformerFactory.Filteredvw().V1alpha1().FilteredAPIExportEndpointSlices().Informer().HasSynced() &&
 					r.CacheKcpSharedInformerFactory.Core().V1alpha1().Shards().Informer().HasSynced() &&
 					r.CacheKcpSharedInformerFactory.Apis().V1alpha2().APIExports().Informer().HasSynced(), nil
 			})

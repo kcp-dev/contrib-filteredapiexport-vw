@@ -46,6 +46,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/pkg/version"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	logsapiv1 "k8s.io/component-base/logs/api/v1"
 	"k8s.io/klog/v2"
@@ -81,6 +82,8 @@ func NewCommand(ctx context.Context, errout io.Writer) *cobra.Command {
 // Run takes the options, starts the API server and waits until stopCh is closed or initial listening fails.
 func Run(ctx context.Context, o *options.Options) error {
 	logger := klog.FromContext(ctx).WithValues("component", "virtual-workspaces")
+	cacheEnabled := len(o.Cache.KubeconfigFile) > 0
+
 	// parse local shard kubeconfig
 	localShardKubeconfig, err := readKubeConfig(o.LocalShardKubeconfigFile, o.Context)
 	if err != nil {
@@ -116,17 +119,24 @@ func Run(ctx context.Context, o *options.Options) error {
 	}
 
 	// parse cache kubeconfig
-	defaultCacheClientConfig, err := frontProxyKubeconfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-	cacheConfig, err := o.Cache.RestConfig(defaultCacheClientConfig)
-	if err != nil {
-		return err
-	}
-	cacheKcpClusterClient, err := kcpclientset.NewForConfig(cacheConfig)
-	if err != nil {
-		return err
+	var (
+		cacheKcpClusterClient *kcpclientset.ClusterClientset
+		cacheConfig           *rest.Config
+		cErr                  error
+	)
+	if cacheEnabled {
+		defaultCacheClientConfig, err := frontProxyKubeconfig.ClientConfig()
+		if err != nil {
+			return err
+		}
+		cacheConfig, cErr = o.Cache.RestConfig(defaultCacheClientConfig)
+		if cErr != nil {
+			return cErr
+		}
+		cacheKcpClusterClient, cErr = kcpclientset.NewForConfig(cacheConfig)
+		if cErr != nil {
+			return cErr
+		}
 	}
 
 	// Don't throttle
@@ -169,21 +179,20 @@ func Run(ctx context.Context, o *options.Options) error {
 	if err != nil {
 		return err
 	}
-	cacheFilteredAPIExportClusterClient, err := filteredapiexportclientset.NewForConfig(cacheConfig)
-	if err != nil {
-		return err
-	}
 
 	localKcpInformers := kcpinformers.NewSharedInformerFactory(localKcpClusterClient, 10*time.Minute)
-	cacheKcpInformers := kcpinformers.NewSharedInformerFactory(cacheKcpClusterClient, 10*time.Minute)
 	filteredAPIExportInformers := filteredapiexportinformers.NewSharedInformerFactory(filteredAPIExportClusterClient, 10*time.Minute)
-	cacheFilteredAPIExportInformers := filteredapiexportinformers.NewSharedInformerFactory(cacheFilteredAPIExportClusterClient, 10*time.Minute)
+	var cacheKcpInformers kcpinformers.SharedInformerFactory
+	if cacheEnabled {
+		cacheKcpInformers = kcpinformers.NewSharedInformerFactory(cacheKcpClusterClient, 10*time.Minute)
+	} else {
+		cacheKcpInformers = localKcpInformers
+	}
 
 	// create reconciler, install indexers and controllers
 	r := reconciler.NewReconciler(
 		o.ShardName,
 		cacheKcpInformers,
-		cacheFilteredAPIExportInformers,
 		localKcpInformers,
 		filteredAPIExportInformers,
 	)
@@ -260,14 +269,16 @@ func Run(ctx context.Context, o *options.Options) error {
 
 	logger.Info("Starting informers")
 	localKcpInformers.Start(ctx.Done())
-	cacheKcpInformers.Start(ctx.Done())
 	filteredAPIExportInformers.Start(ctx.Done())
-	cacheFilteredAPIExportInformers.Start(ctx.Done())
+	if cacheEnabled {
+		cacheKcpInformers.Start(ctx.Done())
+	}
 
 	localKcpInformers.WaitForCacheSync(ctx.Done())
-	cacheKcpInformers.WaitForCacheSync(ctx.Done())
 	filteredAPIExportInformers.WaitForCacheSync(ctx.Done())
-	cacheFilteredAPIExportInformers.WaitForCacheSync(ctx.Done())
+	if cacheEnabled {
+		cacheKcpInformers.WaitForCacheSync(ctx.Done())
+	}
 
 	logger.Info("Starting virtual workspace controllers")
 	r.StartControllers(ctx)

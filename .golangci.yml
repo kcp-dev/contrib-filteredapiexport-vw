@@ -90,6 +90,8 @@ linters:
       - path: (.+)\.go$
         text: QF1008 # embedded field names in selectors often make the code more readable, though more verbose
       # gocyclo
+      - path: cmd/filtered-apiexport-vw/command/cmd.go
+        text: cyclomatic complexity 32 of func `Run` is high
       - path: virtual/filteredapiexport/admission
         text: cyclomatic complexity 31 of func `\(\*selectorAdmission\).Admit` is high
       - path: virtual/filteredapiexport/controllers/apireconciler
