@@ -13,6 +13,7 @@ Protocol Incompatibility: These transitions do not natively support standard KRM
 Lack of Persistence: To resolve these issues, the system would require the generation of synthetic events and the management of "shadow" objects (to handle finalizers and graceful deletions). This would necessitate a dedicated persistence layer within the workspace, which falls outside the original scope of this lightweight routing experiment.
 
 ## Future Exploration
+
 While this project is no longer being actively maintained or updated, the underlying concepts remain open for discussion. If you are interested in evolving these ideas or addressing the persistence requirements mentioned above, please reach out to the maintainers.
 
 # Filtered APIExport Virtual Workspace
