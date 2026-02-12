@@ -1,3 +1,19 @@
+# OnHold
+
+This repository served as an exploration into routing objects between providers using a VirtualWorkspace architecture. Following initial implementation and testing, it was determined that the current design is not viable for real-world production scenarios.
+
+## Core Technical Limitations
+The primary challenge lies in the lack of alignment with Kubernetes Resource Model (KRM) semantics during provider transitions. Specifically:
+
+State Discontinuity: When a user modifies a label or routing configuration, the object is immediately removed from the source provider and recreated in the destination provider.
+
+Protocol Incompatibility: These transitions do not natively support standard KRM operations such as WATCH or DELETE. Consequently, controllers or automated systems monitoring these objects lose track of the state during the migration.
+
+Lack of Persistence: To resolve these issues, the system would require the generation of synthetic events and the management of "shadow" objects (to handle finalizers and graceful deletions). This would necessitate a dedicated persistence layer within the workspace, which falls outside the original scope of this lightweight routing experiment.
+
+## Future Exploration
+While this project is no longer being actively maintained or updated, the underlying concepts remain open for discussion. If you are interested in evolving these ideas or addressing the persistence requirements mentioned above, please reach out to the maintainers.
+
 # Filtered APIExport Virtual Workspace
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/kcp-dev/contrib-filteredapiexport-vw)](https://goreportcard.com/report/github.com/kcp-dev/contrib-filteredapiexport-vw)
