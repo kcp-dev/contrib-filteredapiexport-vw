@@ -3,6 +3,7 @@
 This repository served as an exploration into routing objects between providers using a VirtualWorkspace architecture. Following initial implementation and testing, it was determined that the current design is not viable for real-world production scenarios.
 
 ## Core Technical Limitations
+
 The primary challenge lies in the lack of alignment with Kubernetes Resource Model (KRM) semantics during provider transitions. Specifically:
 
 State Discontinuity: When a user modifies a label or routing configuration, the object is immediately removed from the source provider and recreated in the destination provider.
